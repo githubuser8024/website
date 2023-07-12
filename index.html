@@ -1,2 +1,42 @@
 hello jenkins
 from at 21:46Pm IST
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Pull code from Git') {
+            steps {
+                git 'https://github.com/githubuser8024/website.git'
+            }
+        }
+
+        stage('Deploy code to app server') {
+            steps {
+                script {
+                    sshagent(['cicd']) {
+                        stage('RSync') {
+                            sh 'rsync -avz -e "ssh -o StrictHostKeyChecking=no" $WORKSPACE/ cicd@52.66.38.22:/home/cicd/code'
+							
+							stage('Copy to Html') {
+                            sh 'ssh -o StrictHostKeyChecking=no cicd@52.66.38.22 sudo cp -rf /home/cicd/code/* /var/www/html'
+                            }
+							
+							stage('Restart Apache') {
+                            sh 'ssh -o StrictHostKeyChecking=no cicd@52.66.38.22 sudo service httpd restart'
+                        }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+On app server
+
+chmod -R 775 /home/cicd/code
+chmod -R 775 /var/www/html
+
+
